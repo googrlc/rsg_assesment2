@@ -1,0 +1,98 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+
+interface HubSpotContactData {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  website: string;
+  industry: string;
+  leadScore: number;
+  urgency: string;
+  fitScore: number;
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  try {
+    const data: HubSpotContactData = req.body;
+
+    // Create contact in HubSpot
+    const contactResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        properties: {
+          firstname: data.contactName.split(' ')[0],
+          lastname: data.contactName.split(' ').slice(1).join(' ') || '',
+          email: data.email,
+          phone: data.phone,
+          website: data.website,
+          company: data.companyName,
+          industry: data.industry,
+          hs_lead_status: 'NEW',
+          lead_score: data.leadScore.toString(),
+          urgency_level: data.urgency,
+          fit_score: data.fitScore.toString(),
+          lifecyclestage: 'lead',
+          lead_source: 'Agent Assessment'
+        }
+      })
+    });
+
+    if (!contactResponse.ok) {
+      const errorText = await contactResponse.text();
+      console.error('HubSpot API Error:', errorText);
+      throw new Error(`HubSpot API error: ${contactResponse.status}`);
+    }
+
+    const contactResult = await contactResponse.json();
+
+    // Optional: Create company if it doesn't exist
+    if (data.companyName) {
+      try {
+        await fetch('https://api.hubapi.com/crm/v3/objects/companies', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            properties: {
+              name: data.companyName,
+              website: data.website,
+              industry: data.industry,
+              lead_source: 'Agent Assessment'
+            }
+          })
+        });
+      } catch (companyError) {
+        // Company might already exist, that's OK
+        console.log('Company creation skipped (might already exist)');
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      contactId: contactResult.id,
+      message: 'Contact created successfully' 
+    });
+
+  } catch (error) {
+    console.error('Error creating contact:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create contact in HubSpot',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
