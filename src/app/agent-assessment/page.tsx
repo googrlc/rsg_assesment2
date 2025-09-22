@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { FileText, User, Building, DollarSign, Target, Zap, Car, Home } from 'lucide-react';
+import { User, Target, Zap, Car, Home } from 'lucide-react';
 
 interface AssessmentData {
   // Client Info (HubSpot)
@@ -142,7 +142,6 @@ export default function AgentAssessment() {
     setIsSubmitting(true);
     
     try {
-      // Split data for HubSpot vs PDF
       const hubspotData = {
         companyName: formData.companyName,
         contactName: formData.contactName,
@@ -157,14 +156,12 @@ export default function AgentAssessment() {
         homeNeeded: formData.homeNeeded
       };
 
-      // Send to HubSpot
       await fetch('/api/hubspot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(hubspotData)
       });
 
-      // Generate PDF with full assessment
       const pdfResponse = await fetch('/api/generate-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,7 +187,7 @@ export default function AgentAssessment() {
     setIsSubmitting(false);
   };
 
-  const updateField = (field: keyof AssessmentData, value: any) => {
+  const updateField = (field: keyof AssessmentData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -198,13 +195,6 @@ export default function AgentAssessment() {
     setFormData(prev => ({
       ...prev,
       vehicles: [...prev.vehicles, { year: '', make: '', model: '', vin: '', ownership: '', primaryUse: '', annualMileage: '', safetyFeatures: '', modifications: '', garagedAddress: '', existingDamages: '' }]
-    }));
-  };
-
-  const addDriver = () => {
-    setFormData(prev => ({
-      ...prev,
-      drivers: [...prev.drivers, { name: '', dob: '', licenseNumber: '', drivingHistory: '', defensiveDriving: false, studentGrades: '' }]
     }));
   };
 
@@ -223,7 +213,6 @@ export default function AgentAssessment() {
             <p className="text-sm text-gray-600 mt-2">Step {currentStep} of 5</p>
           </div>
 
-          {/* Step 1: Client Information */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="flex items-center mb-6">
@@ -310,7 +299,6 @@ export default function AgentAssessment() {
             </div>
           )}
 
-          {/* Step 2: Auto Insurance */}
           {currentStep === 2 && formData.autoNeeded && (
             <div className="space-y-6">
               <div className="flex items-center mb-6">
@@ -318,7 +306,6 @@ export default function AgentAssessment() {
                 <h2 className="text-xl font-semibold">Auto Insurance Assessment</h2>
               </div>
 
-              {/* Vehicle Information */}
               <div className="border p-4 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Vehicle Information</h3>
@@ -342,7 +329,7 @@ export default function AgentAssessment() {
                         onChange={(e) => {
                           const newVehicles = [...formData.vehicles];
                           newVehicles[index].year = e.target.value;
-                          updateField('vehicles', newVehicles);
+                          setFormData(prev => ({ ...prev, vehicles: newVehicles }));
                         }}
                         className="p-3 border border-gray-300 rounded-md"
                       />
@@ -353,7 +340,7 @@ export default function AgentAssessment() {
                         onChange={(e) => {
                           const newVehicles = [...formData.vehicles];
                           newVehicles[index].make = e.target.value;
-                          updateField('vehicles', newVehicles);
+                          setFormData(prev => ({ ...prev, vehicles: newVehicles }));
                         }}
                         className="p-3 border border-gray-300 rounded-md"
                       />
@@ -364,7 +351,7 @@ export default function AgentAssessment() {
                         onChange={(e) => {
                           const newVehicles = [...formData.vehicles];
                           newVehicles[index].model = e.target.value;
-                          updateField('vehicles', newVehicles);
+                          setFormData(prev => ({ ...prev, vehicles: newVehicles }));
                         }}
                         className="p-3 border border-gray-300 rounded-md"
                       />
@@ -375,7 +362,7 @@ export default function AgentAssessment() {
                         onChange={(e) => {
                           const newVehicles = [...formData.vehicles];
                           newVehicles[index].vin = e.target.value;
-                          updateField('vehicles', newVehicles);
+                          setFormData(prev => ({ ...prev, vehicles: newVehicles }));
                         }}
                         className="p-3 border border-gray-300 rounded-md"
                       />
@@ -384,7 +371,7 @@ export default function AgentAssessment() {
                         onChange={(e) => {
                           const newVehicles = [...formData.vehicles];
                           newVehicles[index].ownership = e.target.value;
-                          updateField('vehicles', newVehicles);
+                          setFormData(prev => ({ ...prev, vehicles: newVehicles }));
                         }}
                         className="p-3 border border-gray-300 rounded-md"
                       >
@@ -398,7 +385,7 @@ export default function AgentAssessment() {
                         onChange={(e) => {
                           const newVehicles = [...formData.vehicles];
                           newVehicles[index].primaryUse = e.target.value;
-                          updateField('vehicles', newVehicles);
+                          setFormData(prev => ({ ...prev, vehicles: newVehicles }));
                         }}
                         className="p-3 border border-gray-300 rounded-md"
                       >
@@ -407,45 +394,11 @@ export default function AgentAssessment() {
                         <option value="business">Business</option>
                         <option value="pleasure">Pleasure</option>
                       </select>
-                      <input
-                        type="text"
-                        placeholder="Annual Mileage"
-                        value={vehicle.annualMileage}
-                        onChange={(e) => {
-                          const newVehicles = [...formData.vehicles];
-                          newVehicles[index].annualMileage = e.target.value;
-                          updateField('vehicles', newVehicles);
-                        }}
-                        className="p-3 border border-gray-300 rounded-md"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Safety Features"
-                        value={vehicle.safetyFeatures}
-                        onChange={(e) => {
-                          const newVehicles = [...formData.vehicles];
-                          newVehicles[index].safetyFeatures = e.target.value;
-                          updateField('vehicles', newVehicles);
-                        }}
-                        className="p-3 border border-gray-300 rounded-md"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Garaged Address"
-                        value={vehicle.garagedAddress}
-                        onChange={(e) => {
-                          const newVehicles = [...formData.vehicles];
-                          newVehicles[index].garagedAddress = e.target.value;
-                          updateField('vehicles', newVehicles);
-                        }}
-                        className="p-3 border border-gray-300 rounded-md md:col-span-3"
-                      />
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Coverage Preferences */}
               <div className="border p-4 rounded-lg">
                 <h3 className="text-lg font-medium mb-4">Coverage Preferences</h3>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -484,22 +437,12 @@ export default function AgentAssessment() {
                       />
                       Roadside Assistance
                     </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.autoGapCoverage}
-                        onChange={(e) => updateField('autoGapCoverage', e.target.checked)}
-                        className="mr-2"
-                      />
-                      Gap Coverage
-                    </label>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 3: Homeowners Insurance */}
           {currentStep === 3 && formData.homeNeeded && (
             <div className="space-y-6">
               <div className="flex items-center mb-6">
@@ -507,7 +450,6 @@ export default function AgentAssessment() {
                 <h2 className="text-xl font-semibold">Homeowners Insurance Assessment</h2>
               </div>
 
-              {/* Property Details */}
               <div className="border p-4 rounded-lg">
                 <h3 className="text-lg font-medium mb-4">Property Details</h3>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -559,59 +501,9 @@ export default function AgentAssessment() {
                     <option value="townhouse">Townhouse</option>
                     <option value="multi-family">Multi-Family</option>
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Roof Type"
-                    value={formData.roofType}
-                    onChange={(e) => updateField('roofType', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Roof Last Replaced (Year)"
-                    value={formData.roofReplaced}
-                    onChange={(e) => updateField('roofReplaced', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
                 </div>
               </div>
 
-              {/* Safety & Systems */}
-              <div className="border p-4 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Safety & Systems</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <textarea
-                    placeholder="Heating & Cooling Systems"
-                    value={formData.heatingCooling}
-                    onChange={(e) => updateField('heatingCooling', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                    rows={2}
-                  />
-                  <textarea
-                    placeholder="Safety Systems (smoke detectors, security, etc.)"
-                    value={formData.safetySystemsHome}
-                    onChange={(e) => updateField('safetySystemsHome', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                    rows={2}
-                  />
-                  <textarea
-                    placeholder="Smart Home Technology"
-                    value={formData.smartHome}
-                    onChange={(e) => updateField('smartHome', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                    rows={2}
-                  />
-                  <textarea
-                    placeholder="Recent System Updates"
-                    value={formData.systemUpdates}
-                    onChange={(e) => updateField('systemUpdates', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                    rows={2}
-                  />
-                </div>
-              </div>
-
-              {/* Coverage Preferences */}
               <div className="border p-4 rounded-lg">
                 <h3 className="text-lg font-medium mb-4">Coverage Preferences</h3>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -626,14 +518,7 @@ export default function AgentAssessment() {
                     <option value="2500">$2,500</option>
                     <option value="5000">$5,000</option>
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Personal Property Coverage Needed"
-                    value={formData.personalPropertyCoverage}
-                    onChange={(e) => updateField('personalPropertyCoverage', e.target.value)}
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                  <label className="flex items-center md:col-span-2">
+                  <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={formData.floodEarthquake}
@@ -647,7 +532,6 @@ export default function AgentAssessment() {
             </div>
           )}
 
-          {/* Step 4: General Assessment */}
           {currentStep === 4 && (
             <div className="space-y-6">
               <div className="flex items-center mb-6">
@@ -704,24 +588,10 @@ export default function AgentAssessment() {
                     </select>
                   </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Current Insurance Carriers
-                  </label>
-                  <textarea
-                    value={formData.currentSolutions}
-                    onChange={(e) => updateField('currentSolutions', e.target.value)}
-                    rows={3}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Who are their current insurance providers?"
-                  />
-                </div>
               </div>
             </div>
           )}
 
-          {/* Step 5: Scoring */}
           {currentStep === 5 && (
             <div className="space-y-6">
               <div className="flex items-center mb-6">
